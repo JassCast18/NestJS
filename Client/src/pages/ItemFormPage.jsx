@@ -94,7 +94,7 @@ export function ItemFormPage() {
             type="number"
             id="price"
             className="form-control"
-            {...register("price")}
+            {...register("price", { valueAsNumber: true })}
           />
         </div>
 
