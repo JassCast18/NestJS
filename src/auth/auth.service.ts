@@ -1,4 +1,4 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { ConflictException, HttpException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { RegisterAuthDto } from './dto/register-auth.dto';
 import {hash, compare} from 'bcrypt';
@@ -10,14 +10,32 @@ export class AuthService {
    constructor( private prisma: PrismaService,
       private jwtService: JwtService
    ) {}
+async register(userObject: RegisterAuthDto) {
+ 
+  const { email, password } = userObject;
 
-   async register(userObject: RegisterAuthDto) {
-      const {password} = userObject; //esto es texto plano
-      const plainToHash= await hash(password, 10); // esto es encriptado
-      userObject ={... userObject,password:plainToHash};
 
-      return this.prisma.user.create({data:userObject});
-   }
+  const existingUser = await this.prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (existingUser) {
+    throw new ConflictException('Este correo electrónico ya está registrado.');
+  }
+
+
+  const plainToHash = await hash(password, 10); // Encriptamos la contraseña
+
+  const dataToCreate = {
+    ...userObject,
+    password: plainToHash,
+  };
+
+  // Finalmente, creamos el usuario en la base de datos
+  return this.prisma.user.create({
+    data: dataToCreate,
+  });
+}
 
    async login(userObjectLogin: LoginAuthDto) {
       const {email, password} = userObjectLogin;

@@ -27,30 +27,27 @@ export const AuthProvider = ({ children }) => {
     }
   }, [errors]);
 
-  const signup = async (user) => {
-    try {
-      const res = await registerRequest(user);
-      if (res.status === 200) {
-        setUser(res.data);
-        setIsAuthenticated(true);
-      }
-    } catch (error) {
-      console.log(error.response.data);
-      setErrors(error.response.data.message);
-    }
-  };
+const signup = async (user) => {
+  try {
+    const { confirmPassword, ...userToSend } = user;
+    await registerRequest(userToSend);
+    await signin({ email: user.email, password: user.password });
+  } catch (error) {
+    console.log(error.response.data);
+    const errorMessage = error.response?.data?.message || ["Ocurrió un error inesperado"];
+    setErrors(Array.isArray(errorMessage) ? errorMessage : [errorMessage]);
+  }
+};
 
-  const signin = async (user) => {
-    try {
-      const res = await loginRequest(user);
-      setUser(res.data);
-      setIsAuthenticated(true);
-    } catch (error) {
-      if (error.response) {
-      // El backend respondió con un error (404 o 403)
+const signin = async (user) => {
+  try {
+    const res = await loginRequest(user);
+    setUser(res.data);
+    setIsAuthenticated(true);
+  } catch (error) {
+    if (error.response) {
       const status = error.response.status;
       const message = error.response.data.message;
-
       if (status === 404) {
         alert('Usuario no encontrado');
       } else if (status === 403) {
@@ -59,11 +56,10 @@ export const AuthProvider = ({ children }) => {
         alert(message || 'Error en el login');
       }
     } else {
-      // Error de red o servidor
       alert('Error de conexión con el servidor');
     }
-    }
-  };
+  }
+};
 
   const logout = () => {
     Cookies.remove("token");
